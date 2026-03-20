@@ -1,0 +1,9 @@
+const RecurringExpense = require('../models/RecurringExpense');
+const userFilter = (req) => req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+
+exports.getAll = async (req, res, next) => { try { const d = await RecurringExpense.find({ ...userFilter(req) }).populate('vendor', 'name').populate('createdBy', 'name').sort({ createdAt: -1 }); res.json({ success: true, data: d }); } catch (e) { next(e); } };
+exports.getOne = async (req, res, next) => { try { const d = await RecurringExpense.findOne({ _id: req.params.id, ...userFilter(req) }).populate('vendor', 'name').populate('createdBy', 'name'); if (!d) return res.status(404).json({ success: false, message: 'Not found' }); res.json({ success: true, data: d }); } catch (e) { next(e); } };
+exports.create = async (req, res, next) => { try { const d = await RecurringExpense.create({ ...req.body, createdBy: req.user._id }); res.status(201).json({ success: true, data: d }); } catch (e) { next(e); } };
+exports.update = async (req, res, next) => { try { const d = await RecurringExpense.findOneAndUpdate({ _id: req.params.id, ...userFilter(req) }, req.body, { new: true, runValidators: true }); if (!d) return res.status(404).json({ success: false, message: 'Not found' }); res.json({ success: true, data: d }); } catch (e) { next(e); } };
+exports.remove = async (req, res, next) => { try { const d = await RecurringExpense.findOne({ _id: req.params.id, ...userFilter(req) }); if (!d) return res.status(404).json({ success: false, message: 'Not found' }); await d.deleteOne(); res.json({ success: true, message: 'Deleted' }); } catch (e) { next(e); } };
+exports.toggle = async (req, res, next) => { try { const d = await RecurringExpense.findOne({ _id: req.params.id, ...userFilter(req) }); if (!d) return res.status(404).json({ success: false, message: 'Not found' }); d.active = !d.active; await d.save(); res.json({ success: true, data: d }); } catch (e) { next(e); } };

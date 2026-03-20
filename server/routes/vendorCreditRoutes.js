@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const c = require('../controllers/vendorCreditController');
+const { protect, authorize } = require('../middleware/auth');
+router.use(protect);
+router.route('/').get(c.getAll).post(c.create);
+router.route('/:id').get(c.getOne).delete(c.remove);
+router.put('/:id/issue', c.issue);
+router.put('/:id/apply', c.apply);
+module.exports = router;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { FiPlus, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiAlertCircle } from 'react-icons/fi';
 
 const Categories = () => {
     const [categories, setCategories] = useState([]);
@@ -9,6 +9,8 @@ const Categories = () => {
     const [editItem, setEditItem] = useState(null);
     const [form, setForm] = useState({ name: '', description: '' });
     const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
+    const [formShake, setFormShake] = useState(false);
 
     useEffect(() => { fetch(); }, []);
 
@@ -23,12 +25,21 @@ const Categories = () => {
     const openModal = (item = null) => {
         setEditItem(item);
         setForm(item ? { name: item.name, description: item.description || '' } : { name: '', description: '' });
-        setError('');
+        setError(''); setErrors({});
         setShowModal(true);
+    };
+
+    const validate = () => {
+        const e = {};
+        if (!form.name.trim()) e.name = 'Category name is required';
+        setErrors(e);
+        if (Object.keys(e).length > 0) { setFormShake(true); setTimeout(() => setFormShake(false), 400); }
+        return Object.keys(e).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validate()) return;
         setError('');
         try {
             if (editItem) await api.put(`/categories/${editItem._id}`, form);
@@ -75,16 +86,17 @@ const Categories = () => {
 
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
+                    <div className={`modal modal-sm ${formShake ? 'form-shake' : ''}`} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>{editItem ? 'Edit' : 'Add'} Category</h3>
                             <button className="btn-icon" onClick={() => setShowModal(false)}><FiX /></button>
                         </div>
                         {error && <div className="alert alert-error">{error}</div>}
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-group">
+                        <form onSubmit={handleSubmit} className="modal-form" noValidate>
+                            <div className={`form-group ${errors.name ? 'has-error' : ''}`}>
                                 <label>Name *</label>
-                                <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                                <input type="text" value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: '' }); }} />
+                                {errors.name && <span className="form-error-text"><FiAlertCircle size={12} />{errors.name}</span>}
                             </div>
                             <div className="form-group">
                                 <label>Description</label>

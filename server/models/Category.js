@@ -12,6 +12,10 @@ const categorySchema = new mongoose.Schema(
             type: String,
             default: '',
         },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        },
     },
     { timestamps: true }
 );

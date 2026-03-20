@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiAlertTriangle, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiAlertTriangle, FiX, FiCheck, FiAlertCircle } from 'react-icons/fi';
+
+const DEFAULT_UNITS = ['pcs', 'kg', 'g', 'ltr', 'ml', 'box', 'pack', 'set', 'unit', 'pair', 'dozen'];
 
 const Products = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [customUnits, setCustomUnits] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
@@ -13,10 +16,23 @@ const Products = () => {
     const [editProduct, setEditProduct] = useState(null);
     const [form, setForm] = useState({
         name: '', sku: '', description: '', category: '', supplier: '',
-        price: '', cost: '', quantity: '', lowStockThreshold: '10', unit: 'pcs'
+        price: '', cost: '', quantity: '', unit: 'pcs'
     });
     const [error, setError] = useState('');
     const [formErrors, setFormErrors] = useState({});
+
+    // Inline add states
+    const [showAddCategory, setShowAddCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [addingCategory, setAddingCategory] = useState(false);
+
+    const [showAddSupplier, setShowAddSupplier] = useState(false);
+    const [newSupplierName, setNewSupplierName] = useState('');
+    const [newSupplierEmail, setNewSupplierEmail] = useState('');
+    const [addingSupplier, setAddingSupplier] = useState(false);
+
+    const [showAddUnit, setShowAddUnit] = useState(false);
+    const [newUnitName, setNewUnitName] = useState('');
 
     useEffect(() => { fetchAll(); }, []);
 
@@ -56,14 +72,17 @@ const Products = () => {
                 name: product.name, sku: product.sku, description: product.description || '',
                 category: product.category?._id || '', supplier: product.supplier?._id || '',
                 price: product.price, cost: product.cost, quantity: product.quantity,
-                lowStockThreshold: product.lowStockThreshold, unit: product.unit || 'pcs'
+                unit: product.unit || 'pcs'
             });
         } else {
             setEditProduct(null);
-            setForm({ name: '', sku: '', description: '', category: '', supplier: '', price: '', cost: '', quantity: '', lowStockThreshold: '10', unit: 'pcs' });
+            setForm({ name: '', sku: '', description: '', category: '', supplier: '', price: '', cost: '', quantity: '', unit: 'pcs' });
         }
         setError('');
         setFormErrors({});
+        setShowAddCategory(false);
+        setShowAddSupplier(false);
+        setShowAddUnit(false);
         setShowModal(true);
     };
 
@@ -85,7 +104,6 @@ const Products = () => {
         setError('');
         if (!validateForm()) return;
 
-        // Clean the form data — remove empty supplier to prevent BSONError
         const submitData = { ...form };
         if (!submitData.supplier) delete submitData.supplier;
         if (!submitData.cost) submitData.cost = 0;
@@ -110,6 +128,59 @@ const Products = () => {
             fetchAll();
         } catch (err) { console.error(err); }
     };
+
+    // ---- Inline Add: Category ----
+    const handleAddCategory = async () => {
+        if (!newCategoryName.trim()) return;
+        setAddingCategory(true);
+        try {
+            const res = await api.post('/categories', { name: newCategoryName.trim() });
+            const newCat = res.data.data;
+            setCategories(prev => [...prev, newCat]);
+            setForm(prev => ({ ...prev, category: newCat._id }));
+            setNewCategoryName('');
+            setShowAddCategory(false);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to add category');
+        } finally {
+            setAddingCategory(false);
+        }
+    };
+
+    // ---- Inline Add: Supplier ----
+    const handleAddSupplier = async () => {
+        if (!newSupplierName.trim()) return;
+        setAddingSupplier(true);
+        try {
+            const body = { name: newSupplierName.trim() };
+            if (newSupplierEmail.trim()) body.email = newSupplierEmail.trim();
+            const res = await api.post('/suppliers', body);
+            const newSup = res.data.data;
+            setSuppliers(prev => [...prev, newSup]);
+            setForm(prev => ({ ...prev, supplier: newSup._id }));
+            setNewSupplierName('');
+            setNewSupplierEmail('');
+            setShowAddSupplier(false);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to add supplier');
+        } finally {
+            setAddingSupplier(false);
+        }
+    };
+
+    // ---- Inline Add: Unit ----
+    const handleAddUnit = () => {
+        if (!newUnitName.trim()) return;
+        const u = newUnitName.trim().toLowerCase();
+        if (!customUnits.includes(u) && !DEFAULT_UNITS.includes(u)) {
+            setCustomUnits(prev => [...prev, u]);
+        }
+        setForm(prev => ({ ...prev, unit: u }));
+        setNewUnitName('');
+        setShowAddUnit(false);
+    };
+
+    const allUnits = [...DEFAULT_UNITS, ...customUnits];
 
     if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
 
@@ -162,7 +233,7 @@ const Products = () => {
                                 <td>₹{p.cost.toLocaleString()}</td>
                                 <td>{p.quantity} {p.unit}</td>
                                 <td>
-                                    {p.quantity <= p.lowStockThreshold ? (
+                                    {p.quantity <= 10 ? (
                                         <span className="badge badge-danger"><FiAlertTriangle /> Low Stock</span>
                                     ) : (
                                         <span className="badge badge-success">In Stock</span>
@@ -190,45 +261,100 @@ const Products = () => {
                             <button className="btn-icon" onClick={() => setShowModal(false)}><FiX /></button>
                         </div>
                         {error && <div className="alert alert-error">{error}</div>}
-                        <form onSubmit={handleSubmit} className="modal-form">
+                        <form onSubmit={handleSubmit} className="modal-form" noValidate>
                             <div className="form-row">
-                                <div className="form-group">
+                                <div className={`form-group ${formErrors.name ? 'has-error' : ''}`}>
                                     <label>Product Name *</label>
-                                    <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={formErrors.name ? 'invalid' : ''} placeholder="e.g. Laptop HP ProBook" />
-                                    {formErrors.name && <span className="form-error">{formErrors.name}</span>}
+                                    <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Laptop HP ProBook" />
+                                    {formErrors.name && <span className="form-error-text"><FiAlertCircle size={12} />{formErrors.name}</span>}
                                 </div>
-                                <div className="form-group">
+                                <div className={`form-group ${formErrors.sku ? 'has-error' : ''}`}>
                                     <label>SKU *</label>
-                                    <input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} className={formErrors.sku ? 'invalid' : ''} placeholder="e.g. LAP-HP-001" />
-                                    {formErrors.sku && <span className="form-error">{formErrors.sku}</span>}
+                                    <input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="e.g. LAP-HP-001" />
+                                    {formErrors.sku && <span className="form-error-text"><FiAlertCircle size={12} />{formErrors.sku}</span>}
                                 </div>
                             </div>
                             <div className="form-group">
                                 <label>Description</label>
                                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows="2" />
                             </div>
+
+                            {/* ---- Category with inline add ---- */}
                             <div className="form-row">
-                                <div className="form-group">
+                                <div className={`form-group ${formErrors.category ? 'has-error' : ''}`}>
                                     <label>Category *</label>
-                                    <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={formErrors.category ? 'invalid' : ''}>
+                                    <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
                                         <option value="">Select category</option>
                                         {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                     </select>
-                                    {formErrors.category && <span className="form-error">{formErrors.category}</span>}
+                                    {formErrors.category && <span className="form-error-text"><FiAlertCircle size={12} />{formErrors.category}</span>}
+                                    {!showAddCategory ? (
+                                        <button type="button" className="inline-add-btn" onClick={() => setShowAddCategory(true)}>
+                                            <FiPlus /> Add New Category
+                                        </button>
+                                    ) : (
+                                        <div className="inline-add-form">
+                                            <input
+                                                type="text"
+                                                placeholder="Category name"
+                                                value={newCategoryName}
+                                                onChange={e => setNewCategoryName(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                                                autoFocus
+                                            />
+                                            <button type="button" className="inline-add-confirm" onClick={handleAddCategory} disabled={addingCategory}>
+                                                <FiCheck />
+                                            </button>
+                                            <button type="button" className="inline-add-cancel" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
+                                                <FiX />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="form-group">
+
+                                {/* ---- Supplier with inline add ---- */}
+                                {/*<div className="form-group">
                                     <label>Supplier (optional)</label>
                                     <select value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })}>
                                         <option value="">Select supplier</option>
                                         {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                                     </select>
-                                </div>
+                                    {!showAddSupplier ? (
+                                        <button type="button" className="inline-add-btn" onClick={() => setShowAddSupplier(true)}>
+                                            <FiPlus /> Add New Supplier
+                                        </button>
+                                    ) : (
+                                        <div className="inline-add-form">
+                                            <input
+                                                type="text"
+                                                placeholder="Supplier name"
+                                                value={newSupplierName}
+                                                onChange={e => setNewSupplierName(e.target.value)}
+                                                autoFocus
+                                            />
+                                            <input
+                                                type="email"
+                                                placeholder="Email (optional)"
+                                                value={newSupplierEmail}
+                                                onChange={e => setNewSupplierEmail(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddSupplier())}
+                                            />
+                                            <button type="button" className="inline-add-confirm" onClick={handleAddSupplier} disabled={addingSupplier}>
+                                                <FiCheck />
+                                            </button>
+                                            <button type="button" className="inline-add-cancel" onClick={() => { setShowAddSupplier(false); setNewSupplierName(''); setNewSupplierEmail(''); }}>
+                                                <FiX />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>*/}
                             </div>
+
                             <div className="form-row">
-                                <div className="form-group">
+                                <div className={`form-group ${formErrors.price ? 'has-error' : ''}`}>
                                     <label>Price (₹) *</label>
-                                    <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} min="0" className={formErrors.price ? 'invalid' : ''} placeholder="0" />
-                                    {formErrors.price && <span className="form-error">{formErrors.price}</span>}
+                                    <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} min="0" placeholder="0" />
+                                    {formErrors.price && <span className="form-error-text"><FiAlertCircle size={12} />{formErrors.price}</span>}
                                 </div>
                                 <div className="form-group">
                                     <label>Cost (₹)</label>
@@ -236,18 +362,40 @@ const Products = () => {
                                 </div>
                             </div>
                             <div className="form-row">
-                                <div className="form-group">
+                                <div className={`form-group ${formErrors.quantity ? 'has-error' : ''}`}>
                                     <label>Quantity *</label>
-                                    <input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} min="0" className={formErrors.quantity ? 'invalid' : ''} placeholder="0" />
-                                    {formErrors.quantity && <span className="form-error">{formErrors.quantity}</span>}
+                                    <input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} min="0" placeholder="0" />
+                                    {formErrors.quantity && <span className="form-error-text"><FiAlertCircle size={12} />{formErrors.quantity}</span>}
                                 </div>
-                                <div className="form-group">
-                                    <label>Low Stock Threshold</label>
-                                    <input type="number" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })} min="0" />
-                                </div>
+
+                                {/* ---- Unit dropdown with inline add ---- */}
                                 <div className="form-group">
                                     <label>Unit</label>
-                                    <input type="text" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+                                    <select value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>
+                                        {allUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                    </select>
+                                    {!showAddUnit ? (
+                                        <button type="button" className="inline-add-btn" onClick={() => setShowAddUnit(true)}>
+                                            <FiPlus /> Add New Unit
+                                        </button>
+                                    ) : (
+                                        <div className="inline-add-form">
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. meter, roll"
+                                                value={newUnitName}
+                                                onChange={e => setNewUnitName(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddUnit())}
+                                                autoFocus
+                                            />
+                                            <button type="button" className="inline-add-confirm" onClick={handleAddUnit}>
+                                                <FiCheck />
+                                            </button>
+                                            <button type="button" className="inline-add-cancel" onClick={() => { setShowAddUnit(false); setNewUnitName(''); }}>
+                                                <FiX />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="modal-footer">

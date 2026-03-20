@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiUser, FiMail, FiLock, FiUserPlus } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 
 const Register = () => {
     const [form, setForm] = useState({ name: '', email: '', password: '', role: 'sales' });
+    const [showPw, setShowPw] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
@@ -28,9 +29,15 @@ const Register = () => {
 
     return (
         <div className="auth-page">
+            {/* Animated background orbs */}
+            <div className="auth-orb auth-orb-1"></div>
+            <div className="auth-orb auth-orb-2"></div>
+            <div className="auth-orb auth-orb-3"></div>
+
             <div className="auth-container">
                 <div className="auth-left">
                     <div className="auth-brand">
+                        <div className="auth-logo-icon">🚀</div>
                         <h1>ERP<span>System</span></h1>
                         <p>Complete Business Management Solution</p>
                     </div>
@@ -40,28 +47,50 @@ const Register = () => {
                         <div className="feature-item"><span className="feature-dot"></span> HR Management</div>
                         <div className="feature-item"><span className="feature-dot"></span> Reporting & Analytics</div>
                     </div>
+                    <div className="auth-left-shapes">
+                        <div className="shape shape-1"></div>
+                        <div className="shape shape-2"></div>
+                        <div className="shape shape-3"></div>
+                    </div>
                 </div>
                 <div className="auth-right">
                     <div className="auth-form-container">
-                        <h2>Create Account</h2>
-                        <p className="auth-subtitle">Register a new account</p>
+                        <h2>Create Account 🎉</h2>
+                        <p className="auth-subtitle">Register to get started with your business</p>
 
-                        {error && <div className="alert alert-error">{error}</div>}
+                        {error && <div className="alert alert-error auth-shake">{error}</div>}
 
                         <form onSubmit={handleSubmit} className="auth-form">
-                            <div className="form-group">
+                            <div className="form-group auth-input-group">
                                 <label><FiUser /> Full Name</label>
-                                <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="Enter your name" required />
+                                <div className="auth-input-wrap">
+                                    <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="John Doe" required />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label><FiMail /> Email</label>
-                                <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Enter your email" required />
+                            <div className="form-group auth-input-group">
+                                <label><FiMail /> Email Address</label>
+                                <div className="auth-input-wrap">
+                                    <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@example.com" required />
+                                </div>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group auth-input-group">
                                 <label><FiLock /> Password</label>
-                                <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Min 6 characters" required minLength={6} />
+                                <div className="auth-input-wrap">
+                                    <input
+                                        type={showPw ? 'text' : 'password'}
+                                        name="password"
+                                        value={form.password}
+                                        onChange={handleChange}
+                                        placeholder="Min 6 characters"
+                                        required
+                                        minLength={6}
+                                    />
+                                    <button type="button" className="auth-pw-toggle" onClick={() => setShowPw(!showPw)}>
+                                        {showPw ? <FiEyeOff /> : <FiEye />}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group auth-input-group">
                                 <label><FiUser /> Role</label>
                                 <select name="role" value={form.role} onChange={handleChange}>
                                     <option value="sales">Sales</option>
@@ -69,8 +98,14 @@ const Register = () => {
                                     <option value="admin">Admin</option>
                                 </select>
                             </div>
-                            <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-                                <FiUserPlus /> {loading ? 'Creating...' : 'Create Account'}
+                            <button type="submit" className="btn btn-primary btn-block auth-submit-btn" disabled={loading}>
+                                {loading ? (
+                                    <span className="auth-loader-wrap">
+                                        <span className="auth-spinner"></span> Creating Account...
+                                    </span>
+                                ) : (
+                                    <><FiUserPlus /> Create Account</>
+                                )}
                             </button>
                         </form>
 

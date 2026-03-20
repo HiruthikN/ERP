@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { FiUser, FiMail, FiPhone, FiLock, FiShield, FiSave, FiCheck, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiLock, FiShield, FiSave, FiCheck, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 
 const Profile = () => {
     const { user, setUser } = useAuth();
@@ -15,6 +15,7 @@ const Profile = () => {
     const [pwMessage, setPwMessage] = useState('');
     const [error, setError] = useState('');
     const [pwError, setPwError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
 
     useEffect(() => {
         if (user) setForm({ name: user.name || '', email: user.email || '', phone: user.phone || '' });
@@ -23,6 +24,11 @@ const Profile = () => {
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
         setError(''); setMessage('');
+        const ve = {};
+        if (form.email && !/\S+@\S+\.\S+/.test(form.email)) ve.email = 'Invalid email format';
+        if (form.phone && !/^\d{10}$/.test(form.phone)) ve.phone = 'Phone must be 10 digits';
+        setFieldErrors(ve);
+        if (Object.keys(ve).length > 0) return;
         setLoading(true);
         try {
             const res = await api.put('/auth/profile', form);
@@ -87,13 +93,15 @@ const Profile = () => {
                                     <label><FiUser /> Full Name</label>
                                     <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="Your full name" />
                                 </div>
-                                <div className="form-group">
+                                <div className={`form-group ${fieldErrors.email ? 'has-error' : ''}`}>
                                     <label><FiMail /> Email Address</label>
-                                    <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required placeholder="your@email.com" />
+                                    <input type="email" value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' }); }} required placeholder="your@email.com" />
+                                    {fieldErrors.email && <span className="form-error-text"><FiAlertCircle size={12} />{fieldErrors.email}</span>}
                                 </div>
-                                <div className="form-group">
+                                <div className={`form-group ${fieldErrors.phone ? 'has-error' : ''}`}>
                                     <label><FiPhone /> Phone Number</label>
-                                    <input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
+                                    <input type="text" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: '' }); }} placeholder="10-digit number" />
+                                    {fieldErrors.phone && <span className="form-error-text"><FiAlertCircle size={12} />{fieldErrors.phone}</span>}
                                 </div>
                             </div>
                             <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: '1.25rem' }}>

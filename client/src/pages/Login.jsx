@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiMail, FiLock, FiLogIn } from 'react-icons/fi';
+import { FiMail, FiLock, FiLogIn, FiEye, FiEyeOff } from 'react-icons/fi';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPw, setShowPw] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
@@ -27,9 +28,15 @@ const Login = () => {
 
     return (
         <div className="auth-page">
+            {/* Animated background orbs */}
+            <div className="auth-orb auth-orb-1"></div>
+            <div className="auth-orb auth-orb-2"></div>
+            <div className="auth-orb auth-orb-3"></div>
+
             <div className="auth-container">
                 <div className="auth-left">
                     <div className="auth-brand">
+                        <div className="auth-logo-icon">⚡</div>
                         <h1>ERP<span>System</span></h1>
                         <p>Complete Business Management Solution</p>
                     </div>
@@ -39,37 +46,58 @@ const Login = () => {
                         <div className="feature-item"><span className="feature-dot"></span> HR Management</div>
                         <div className="feature-item"><span className="feature-dot"></span> Reporting & Analytics</div>
                     </div>
+                    {/* Animated shapes */}
+                    <div className="auth-left-shapes">
+                        <div className="shape shape-1"></div>
+                        <div className="shape shape-2"></div>
+                        <div className="shape shape-3"></div>
+                    </div>
                 </div>
                 <div className="auth-right">
                     <div className="auth-form-container">
-                        <h2>Welcome Back</h2>
-                        <p className="auth-subtitle">Sign in to your account</p>
+                        <h2>Welcome Back 👋</h2>
+                        <p className="auth-subtitle">Sign in to your account to continue</p>
 
-                        {error && <div className="alert alert-error">{error}</div>}
+                        {error && <div className="alert alert-error auth-shake">{error}</div>}
 
                         <form onSubmit={handleSubmit} className="auth-form">
-                            <div className="form-group">
-                                <label><FiMail /> Email</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email"
-                                    required
-                                />
+                            <div className="form-group auth-input-group">
+                                <label><FiMail /> Email Address</label>
+                                <div className="auth-input-wrap">
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="you@example.com"
+                                        required
+                                        autoComplete="email"
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group auth-input-group">
                                 <label><FiLock /> Password</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your password"
-                                    required
-                                />
+                                <div className="auth-input-wrap">
+                                    <input
+                                        type={showPw ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Enter your password"
+                                        required
+                                        autoComplete="current-password"
+                                    />
+                                    <button type="button" className="auth-pw-toggle" onClick={() => setShowPw(!showPw)}>
+                                        {showPw ? <FiEyeOff /> : <FiEye />}
+                                    </button>
+                                </div>
                             </div>
-                            <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-                                <FiLogIn /> {loading ? 'Signing in...' : 'Sign In'}
+                            <button type="submit" className="btn btn-primary btn-block auth-submit-btn" disabled={loading}>
+                                {loading ? (
+                                    <span className="auth-loader-wrap">
+                                        <span className="auth-spinner"></span> Signing in...
+                                    </span>
+                                ) : (
+                                    <><FiLogIn /> Sign In</>
+                                )}
                             </button>
                         </form>
 
@@ -78,7 +106,7 @@ const Login = () => {
                         </p>
 
                         <div className="demo-credentials">
-                            <p><strong>Credentials:</strong></p>
+                            <p><strong>Demo Credentials:</strong></p>
                             <code>vp@admin.com / Admin@12</code>
                         </div>
                     </div>

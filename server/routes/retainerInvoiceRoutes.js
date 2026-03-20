@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const c = require('../controllers/retainerInvoiceController');
+const { protect, authorize } = require('../middleware/auth');
+router.use(protect);
+router.route('/').get(c.getAll).post(c.create);
+router.route('/:id').get(c.getOne).put(c.update).delete(c.remove);
+router.put('/:id/send', c.send);
+router.put('/:id/mark-paid', c.markPaid);
+module.exports = router;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiSearch, FiAlertCircle } from 'react-icons/fi';
 
 const Employees = () => {
     const [employees, setEmployees] = useState([]);
@@ -10,6 +10,8 @@ const Employees = () => {
     const [search, setSearch] = useState('');
     const [filterDept, setFilterDept] = useState('');
     const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
+    const [formShake, setFormShake] = useState(false);
     const departments = ['Engineering', 'Sales', 'HR', 'Marketing', 'Finance', 'Operations', 'Support', 'Management'];
 
     const [form, setForm] = useState({
@@ -41,12 +43,24 @@ const Employees = () => {
         } else {
             setForm({ name: '', email: '', phone: '', department: 'Engineering', position: '', salary: '', joiningDate: '', status: 'active', address: '' });
         }
-        setError('');
+        setError(''); setErrors({});
         setShowModal(true);
+    };
+
+    const validate = () => {
+        const e = {};
+        if (!form.name.trim()) e.name = 'Name is required';
+        if (!form.email.trim()) e.email = 'Email is required';
+        else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email format';
+        if (form.phone && !/^\d{10}$/.test(form.phone)) e.phone = 'Phone must be 10 digits';
+        setErrors(e);
+        if (Object.keys(e).length > 0) { setFormShake(true); setTimeout(() => setFormShake(false), 400); }
+        return Object.keys(e).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validate()) return;
         setError('');
         try {
             if (editItem) await api.put(`/employees/${editItem._id}`, form);
@@ -106,7 +120,7 @@ const Employees = () => {
 
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
+                    <div className={`modal ${formShake ? 'form-shake' : ''}`} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>{editItem ? 'Edit' : 'Add'} Employee</h3>
                             <button className="btn-icon" onClick={() => setShowModal(false)}><FiX /></button>
@@ -115,10 +129,10 @@ const Employees = () => {
                         <form onSubmit={handleSubmit} className="modal-form">
                             <div className="form-row">
                                 <div className="form-group"><label>Name *</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-                                <div className="form-group"><label>Email *</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required /></div>
+                                <div className={`form-group ${errors.email ? 'has-error' : ''}`}><label>Email *</label><input type="email" value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); if (errors.email) setErrors({ ...errors, email: '' }); }} required />{errors.email && <span className="form-error-text"><FiAlertCircle size={12} />{errors.email}</span>}</div>
                             </div>
                             <div className="form-row">
-                                <div className="form-group"><label>Phone</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+                                <div className={`form-group ${errors.phone ? 'has-error' : ''}`}><label>Phone</label><input type="text" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); if (errors.phone) setErrors({ ...errors, phone: '' }); }} placeholder="10-digit number" />{errors.phone && <span className="form-error-text"><FiAlertCircle size={12} />{errors.phone}</span>}</div>
                                 <div className="form-group"><label>Department *</label>
                                     <select value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} required>
                                         {departments.map(d => <option key={d} value={d}>{d}</option>)}

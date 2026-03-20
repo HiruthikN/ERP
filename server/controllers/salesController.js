@@ -2,6 +2,8 @@ const Sale = require('../models/Sale');
 const Product = require('../models/Product');
 const PDFDocument = require('pdfkit');
 
+const userFilter = (req) => req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+
 // Generate unique invoice number
 const generateInvoiceNumber = async () => {
     const count = await Sale.countDocuments();
@@ -86,7 +88,7 @@ exports.createSale = async (req, res, next) => {
 exports.getSales = async (req, res, next) => {
     try {
         const { startDate, endDate, paymentStatus } = req.query;
-        let query = {};
+        let query = { ...userFilter(req) };
 
         if (startDate && endDate) {
             query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
@@ -106,7 +108,7 @@ exports.getSales = async (req, res, next) => {
 // @desc    Get single sale
 exports.getSale = async (req, res, next) => {
     try {
-        const sale = await Sale.findById(req.params.id)
+        const sale = await Sale.findOne({ _id: req.params.id, ...userFilter(req) })
             .populate('items.product', 'name sku')
             .populate('createdBy', 'name');
         if (!sale) {
@@ -122,7 +124,7 @@ exports.getSale = async (req, res, next) => {
 exports.updatePaymentStatus = async (req, res, next) => {
     try {
         const { paymentStatus, paidAmount } = req.body;
-        const sale = await Sale.findById(req.params.id);
+        const sale = await Sale.findOne({ _id: req.params.id, ...userFilter(req) });
         if (!sale) {
             return res.status(404).json({ success: false, message: 'Sale not found' });
         }
@@ -145,7 +147,7 @@ exports.updatePaymentStatus = async (req, res, next) => {
 // @desc    Generate invoice PDF
 exports.getInvoicePDF = async (req, res, next) => {
     try {
-        const sale = await Sale.findById(req.params.id)
+        const sale = await Sale.findOne({ _id: req.params.id, ...userFilter(req) })
             .populate('items.product', 'name sku')
             .populate('createdBy', 'name');
 

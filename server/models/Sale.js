@@ -7,6 +7,10 @@ const saleSchema = new mongoose.Schema(
             unique: true,
             required: true,
         },
+        salesOrder: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'SalesOrder',
+        },
         items: [
             {
                 product: {

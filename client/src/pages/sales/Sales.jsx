@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
-import { FiPlus, FiEye, FiDownload, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEye, FiDownload, FiX, FiTrash2, FiAlertCircle } from 'react-icons/fi';
 
 const Sales = () => {
     const [sales, setSales] = useState([]);
@@ -11,6 +11,8 @@ const Sales = () => {
     const [showDetail, setShowDetail] = useState(null);
     const [searchParams] = useSearchParams();
     const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
+    const [formShake, setFormShake] = useState(false);
 
     const [form, setForm] = useState({
         items: [{ product: '', quantity: 1 }],
@@ -58,6 +60,10 @@ const Sales = () => {
         setError('');
         const validItems = form.items.filter(i => i.product);
         if (validItems.length === 0) { setError('Add at least one product'); return; }
+        const ve = {};
+        if (form.customerPhone && !/^\d{10}$/.test(form.customerPhone)) ve.phone = 'Phone must be 10 digits';
+        setErrors(ve);
+        if (Object.keys(ve).length > 0) { setFormShake(true); setTimeout(() => setFormShake(false), 400); return; }
         try {
             await api.post('/sales', { ...form, items: validItems });
             setShowModal(false);
@@ -181,7 +187,7 @@ const Sales = () => {
             {/* New Sale Modal */}
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+                    <div className={`modal modal-lg ${formShake ? 'form-shake' : ''}`} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Create New Sale</h3>
                             <button className="btn-icon" onClick={() => setShowModal(false)}><FiX /></button>
@@ -192,8 +198,9 @@ const Sales = () => {
                                 <div className="form-group"><label>Customer Name</label>
                                     <input type="text" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} placeholder="Walk-in Customer" />
                                 </div>
-                                <div className="form-group"><label>Phone</label>
-                                    <input type="text" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} />
+                                <div className={`form-group ${errors.phone ? 'has-error' : ''}`}><label>Phone</label>
+                                    <input type="text" value={form.customerPhone} onChange={e => { setForm({ ...form, customerPhone: e.target.value }); if (errors.phone) setErrors({ ...errors, phone: '' }); }} placeholder="10-digit number" />
+                                    {errors.phone && <span className="form-error-text"><FiAlertCircle size={12} />{errors.phone}</span>}
                                 </div>
                             </div>
 
