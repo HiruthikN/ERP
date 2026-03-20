@@ -233,7 +233,7 @@ const Products = () => {
                                 <td>₹{p.cost.toLocaleString()}</td>
                                 <td>{p.quantity} {p.unit}</td>
                                 <td>
-                                    {p.quantity <= 10 ? (
+                                    {p.quantity <= 5 ? (
                                         <span className="badge badge-danger"><FiAlertTriangle /> Low Stock</span>
                                     ) : (
                                         <span className="badge badge-success">In Stock</span>
