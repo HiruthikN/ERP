@@ -89,7 +89,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-EPR-VP-MCA/
+EPR/
 ├── .env                          # Environment variables
 ├── .env.example                  # Environment template
 ├── package.json                  # Root scripts
