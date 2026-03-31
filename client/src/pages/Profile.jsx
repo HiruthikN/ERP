@@ -84,7 +84,7 @@ const Profile = () => {
                 {activeTab === 'profile' && (
                     <div className="profile-section glass-card">
                         <h3>Personal Information</h3>
-                        <p className="section-desc">Update your personal details here</p>
+                        <p className="section-desc">Update your personal details here </p>
                         {message && <div className="alert alert-success"><FiCheck /> {message}</div>}
                         {error && <div className="alert alert-error">{error}</div>}
                         <form onSubmit={handleProfileUpdate}>
